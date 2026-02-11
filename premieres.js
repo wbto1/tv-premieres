@@ -1,33 +1,25 @@
-async function loadLog() {
+async function load() {
   const res = await fetch('log.json');
-  const data = await res.json();
+  const log = await res.json();
 
-  const container = document.getElementById('log');
-  container.innerHTML = '';
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('date').textContent = today;
 
-  const dates = Object.keys(data).sort().reverse();
+  const premieres = log[today] || [];
 
-  dates.forEach(date => {
-    const block = document.createElement('div');
-    block.className = 'date-block';
+  const container = document.getElementById('premieres');
 
-    const title = document.createElement('h2');
-    title.textContent = date;
-    block.appendChild(title);
+  if (premieres.length === 0) {
+    container.textContent = "Geen premières vandaag.";
+    return;
+  }
 
-    if (data[date].length === 0) {
-      block.innerHTML += '<p>Geen premières vandaag.</p>';
-    } else {
-      data[date].forEach(item => {
-        const div = document.createElement('div');
-        div.className = 'series-item';
-        div.textContent = `• ${item.title} (${item.from} → ${item.channel})`;
-        block.appendChild(div);
-      });
-    }
-
-    container.appendChild(block);
+  premieres.forEach(p => {
+    const div = document.createElement('div');
+    div.className = 'premiere';
+    div.textContent = `${p.title} — ${p.type} (${p.channel})`;
+    container.appendChild(div);
   });
 }
 
-loadLog();
+load();
