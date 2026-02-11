@@ -1,9 +1,7 @@
 document.addEventListener("DOMContentLoaded", () => {
-
   // --- Dark mode toggle ---
   const toggle = document.getElementById('theme-toggle');
 
-  // laad voorkeur
   if (localStorage.getItem('theme') === 'dark') {
     document.body.classList.add('dark');
     toggle.textContent = '☀️';
