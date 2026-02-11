@@ -8,7 +8,6 @@ body {
   background: #fafafa;
 }
 
-/* Header */
 header {
   background: #ffffff;
   padding: 20px 24px;
@@ -39,7 +38,6 @@ header p {
   font-size: 0.95rem;
 }
 
-/* Premiere cards */
 .premiere {
   padding: 10px 12px;
   background: #ffffff;
@@ -60,7 +58,6 @@ header p {
   color: #555;
 }
 
-/* Badges */
 .badge {
   display: inline-block;
   font-size: 0.75rem;
@@ -99,7 +96,6 @@ body.dark .premiere-meta {
   color: #bbb;
 }
 
-/* Toggle button */
 #theme-toggle {
   background: none;
   border: none;
