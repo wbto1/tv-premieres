@@ -1,4 +1,5 @@
-import fs from 'fs';
+const fs = require('fs');
+const fetch = require('node-fetch');
 
 const URL = 'https://api.tvmaze.com/schedule?country=BE';
 const today = new Date().toISOString().split('T')[0];
