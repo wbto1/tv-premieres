@@ -2,15 +2,23 @@
 <html lang="nl">
 <head>
   <meta charset="UTF-8">
-  <title>TV-premières Vlaanderen</title>
+  <title>TV-premières in Vlaanderen</title>
   <link rel="stylesheet" href="style.css">
+  <script defer src="premieres.js"></script>
 </head>
 <body>
-  <h1>📺 TV-premières in Vlaanderen</h1>
-  <p>Dagelijkse log van nieuwe series en films die voor het eerst op Vlaamse tv verschijnen.</p>
+  <header>
+    <h1>TV‑premières in Vlaanderen</h1>
+    <p>Overzicht van alle nieuwe series en films die vandaag voor het eerst op Vlaamse televisie worden uitgezonden.</p>
+  </header>
 
-  <div id="log">Log wordt geladen…</div>
-
-  <script src="premieres.js"></script>
+  <main>
+    <section>
+      <div id="meta">
+        <span>Datum: <span id="date"></span></span>
+      </div>
+      <div id="premieres"></div>
+    </section>
+  </main>
 </body>
 </html>
