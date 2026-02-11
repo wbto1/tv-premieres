@@ -1,25 +1,30 @@
-// --- Dark mode toggle ---
-const toggle = document.getElementById('theme-toggle');
+document.addEventListener("DOMContentLoaded", () => {
 
-// laad voorkeur
-if (localStorage.getItem('theme') === 'dark') {
-  document.body.classList.add('dark');
-  toggle.textContent = '☀️';
-}
+  // --- Dark mode toggle ---
+  const toggle = document.getElementById('theme-toggle');
 
-toggle.addEventListener('click', () => {
-  document.body.classList.toggle('dark');
-
-  if (document.body.classList.contains('dark')) {
+  // laad voorkeur
+  if (localStorage.getItem('theme') === 'dark') {
+    document.body.classList.add('dark');
     toggle.textContent = '☀️';
-    localStorage.setItem('theme', 'dark');
-  } else {
-    toggle.textContent = '🌙';
-    localStorage.setItem('theme', 'light');
   }
+
+  toggle.addEventListener('click', () => {
+    document.body.classList.toggle('dark');
+
+    if (document.body.classList.contains('dark')) {
+      toggle.textContent = '☀️';
+      localStorage.setItem('theme', 'dark');
+    } else {
+      toggle.textContent = '🌙';
+      localStorage.setItem('theme', 'light');
+    }
+  });
+
+  // --- Premières laden ---
+  load();
 });
 
-// --- Premières laden ---
 async function load() {
   const res = await fetch('log.json');
   const log = await res.json();
@@ -62,5 +67,3 @@ async function load() {
     container.appendChild(div);
   });
 }
-
-load();
