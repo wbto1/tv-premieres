@@ -6,7 +6,6 @@ async function load() {
   document.getElementById('date').textContent = today;
 
   const premieres = log[today] || [];
-
   const container = document.getElementById('premieres');
 
   if (premieres.length === 0) {
@@ -17,7 +16,27 @@ async function load() {
   premieres.forEach(p => {
     const div = document.createElement('div');
     div.className = 'premiere';
-    div.textContent = `${p.title} — ${p.type} (${p.channel})`;
+
+    const title = document.createElement('div');
+    title.className = 'premiere-title';
+
+    const badge = document.createElement('span');
+    badge.className = 'badge ' + (p.type === 'Film' ? 'badge-film' : 'badge-serie');
+    badge.textContent = p.type;
+
+    const text = document.createElement('span');
+    text.textContent = p.title;
+
+    title.appendChild(badge);
+    title.appendChild(text);
+
+    const meta = document.createElement('div');
+    meta.className = 'premiere-meta';
+    meta.textContent = `Zender: ${p.channel}`;
+
+    div.appendChild(title);
+    div.appendChild(meta);
+
     container.appendChild(div);
   });
 }
