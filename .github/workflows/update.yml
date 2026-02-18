@@ -8,6 +8,7 @@ on:
 jobs:
   update:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v3
 
@@ -28,4 +29,5 @@ jobs:
           git config --global user.email "github-actions@github.com"
           git add -A
           git commit -m "Daily update" || echo "No changes"
+          git pull --rebase
           git push
