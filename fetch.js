@@ -24,9 +24,28 @@ async function run() {
       premiered: item.show.premiered || null
     }));
 
-  const log = JSON.parse(fs.readFileSync('log.json', 'utf8'));
-  log[today] = premieres;
+  // --- LOGIC: DAGELIJKSE LOG BIJHOUDEN ---
 
+  const log = JSON.parse(fs.readFileSync('log.json', 'utf8'));
+
+  // Als er nog geen entry is voor vandaag → maak een lege array
+  if (!log[today]) {
+    log[today] = [];
+  }
+
+  // Als er GEEN premières zijn → log een tekstregel
+  if (premieres.length === 0) {
+    log[today].push("Geen premières vandaag");
+  } else {
+    // Als er WEL premières zijn → voeg ze toe aan de log
+    log[today].push({
+      tijdstip: new Date().toISOString(),
+      aantal: premieres.length,
+      premieres: premieres
+    });
+  }
+
+  // Schrijf log terug naar bestand
   fs.writeFileSync('log.json', JSON.stringify(log, null, 2));
 }
 
