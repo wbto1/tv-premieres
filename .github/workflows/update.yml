@@ -11,6 +11,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0   # belangrijk voor force-push
 
       - name: Setup Node
         uses: actions/setup-node@v3
@@ -30,5 +32,4 @@ jobs:
           git config --global user.email "github-actions@github.com"
           git add -A
           git commit -m "Daily update" || echo "No changes"
-          git pull --rebase
-          git push
+          git push --force
