@@ -29,10 +29,8 @@ async function run() {
       const res = await fetch(url);
       const xml = await res.text();
 
-      // Bewaar de originele XML
       fs.writeFileSync(`raw/${today}-${name}.xml`, xml);
 
-      // Parse XML → JSON
       const parsed = await xml2js.parseStringPromise(xml, { mergeAttrs: true });
 
       const programs = parsed.tv.programme || [];
@@ -56,7 +54,6 @@ async function run() {
     }
   }
 
-  // FILTERS
   const badGenres = ["Soap", "Reality", "Talkshow", "Nieuws", "Game Show"];
 
   const filtered = allPrograms.filter(p => {
@@ -66,16 +63,13 @@ async function run() {
     const year = p.year || null;
     const season = p.season || null;
 
-    // Blokkeer rommelgenres
     if (badGenres.some(g => genre.includes(g))) return false;
 
-    // Series: alleen seizoen 1 en recent (laatste 2 jaar)
     const isSeries =
       season === 1 &&
       year &&
       year >= currentYear - 2;
 
-    // Films: alleen recent (laatste 3 jaar)
     const isFilm =
       genre.includes("Film") &&
       year &&
@@ -84,7 +78,6 @@ async function run() {
     return isSeries || isFilm;
   });
 
-  // LOGGEN
   let log = {};
   try {
     log = JSON.parse(fs.readFileSync("log.json", "utf8"));
