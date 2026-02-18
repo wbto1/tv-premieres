@@ -26,6 +26,6 @@ jobs:
         run: |
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
-          git add log.json
+          git add -A
           git commit -m "Daily update" || echo "No changes"
           git push
