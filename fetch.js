@@ -1,111 +1,92 @@
 const fs = require("fs");
 const fetch = require("node-fetch");
+const xml2js = require("xml2js");
 
-const channels = [
-  "vtm",
-  "vtm2",
-  "vtm3",
-  "vtm4",
-  "play4",
-  "play5",
-  "play6",
-  "play7",
-  "vrt1",
-  "canvas",
-  "ketnet"
-];
+const channels = {
+  vtm: "https://xmltv.xmltv.se/vtm.be.xml",
+  vtm2: "https://xmltv.xmltv.se/vtm2.be.xml",
+  vtm3: "https://xmltv.xmltv.se/vtm3.be.xml",
+  vtm4: "https://xmltv.xmltv.se/vtm4.be.xml",
+  play4: "https://xmltv.xmltv.se/play4.be.xml",
+  play5: "https://xmltv.xmltv.se/play5.be.xml",
+  play6: "https://xmltv.xmltv.se/play6.be.xml",
+  play7: "https://xmltv.xmltv.se/play7.be.xml",
+  vrt1: "https://xmltv.xmltv.se/vrt1.be.xml",
+  canvas: "https://xmltv.xmltv.se/canvas.be.xml",
+  ketnet: "https://xmltv.xmltv.se/ketnet.be.xml"
+};
 
 async function run() {
   const today = new Date().toISOString().split("T")[0];
   const currentYear = new Date().getFullYear();
 
-  if (!fs.existsSync("raw")) {
-    fs.mkdirSync("raw");
-  }
+  if (!fs.existsSync("raw")) fs.mkdirSync("raw");
 
   let allPrograms = [];
 
-  for (const ch of channels) {
-    const url = `https://www.tvgids.nl/api/v1/programs?channels=${ch}&date=${today}`;
-
+  for (const [name, url] of Object.entries(channels)) {
     try {
-      const res = await fetch(url, {
-        headers: {
-          "User-Agent": "Mozilla/5.0",
-          "Accept": "application/json"
-        }
-      });
+      const res = await fetch(url);
+      const xml = await res.text();
 
-      const data = await res.json();
+      const parsed = await xml2js.parseStringPromise(xml, { mergeAttrs: true });
 
       fs.writeFileSync(
-        `raw/${today}-${ch}.json`,
-        JSON.stringify(data, null, 2)
+        `raw/${today}-${name}.xml`,
+        xml
       );
 
-      if (Array.isArray(data.programs)) {
-        allPrograms.push(...data.programs);
-      }
+      const programs = parsed.tv.programme || [];
 
-      console.log(`OK: ${ch}`);
+      const mapped = programs.map(p => ({
+        title: p.title?.[0]?._ || "",
+        start: p.start?.[0] || "",
+        stop: p.stop?.[0] || "",
+        category: p.category?.[0]?._ || "",
+        desc: p.desc?.[0]?._ || "",
+        channel: name,
+        year: extractYear(p.desc?.[0]?._),
+        season: extractSeason(p.desc?.[0]?._)
+      }));
+
+      allPrograms.push(...mapped);
+
+      console.log(`OK: ${name}`);
     } catch (err) {
-      console.log(`FOUT bij ${ch}: ${err.message}`);
+      console.log(`FOUT bij ${name}: ${err.message}`);
     }
   }
 
   // FILTERS
-  const badGenres = [
-    "Soap",
-    "Reality",
-    "Talkshow",
-    "Talk Show",
-    "Nieuws",
-    "News",
-    "Game Show"
-  ];
+  const badGenres = ["Soap", "Reality", "Talkshow", "Nieuws", "Game Show"];
 
-  const filtered = allPrograms
-    .filter(p => {
-      if (!p.title) return false;
+  const filtered = allPrograms.filter(p => {
+    if (!p.title) return false;
 
-      const genre = p.genre || "";
-      const year = p.year ? parseInt(p.year) : null;
-      const season = p.season ? parseInt(p.season) : null;
+    const genre = p.category || "";
+    const year = p.year || null;
+    const season = p.season || null;
 
-      // Blokkeer rommelgenres
-      if (badGenres.some(g => genre.includes(g))) return false;
+    if (badGenres.some(g => genre.includes(g))) return false;
 
-      // Series: alleen seizoen 1 en recent (laatste 2 jaar)
-      const isSeries =
-        p.type === "series" &&
-        season === 1 &&
-        year &&
-        year >= currentYear - 2;
+    const isSeries =
+      season === 1 &&
+      year &&
+      year >= currentYear - 2;
 
-      // Films: alleen recent (laatste 3 jaar)
-      const isFilm =
-        p.type === "movie" &&
-        year &&
-        year >= currentYear - 3;
+    const isFilm =
+      genre.includes("Film") &&
+      year &&
+      year >= currentYear - 3;
 
-      return isSeries || isFilm;
-    })
-    .map(p => ({
-      title: p.title,
-      channel: p.channel,
-      type: p.type,
-      year: p.year,
-      season: p.season || null,
-      genre: p.genre || null,
-      start: p.start,
-      end: p.end
-    }));
+    return isSeries || isFilm;
+  });
 
   // LOGGEN
   let log = {};
   try {
     log = JSON.parse(fs.readFileSync("log.json", "utf8"));
-  } catch (e) {
+  } catch {
     log = {};
   }
 
@@ -118,6 +99,18 @@ async function run() {
   });
 
   fs.writeFileSync("log.json", JSON.stringify(log, null, 2));
+}
+
+function extractYear(text) {
+  if (!text) return null;
+  const match = text.match(/\b(19|20)\d{2}\b/);
+  return match ? parseInt(match[0]) : null;
+}
+
+function extractSeason(text) {
+  if (!text) return null;
+  const match = text.match(/seizoen\s+(\d+)/i);
+  return match ? parseInt(match[1]) : null;
 }
 
 run();
