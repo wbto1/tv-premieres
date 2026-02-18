@@ -1,33 +1,113 @@
-name: Update TV Premieres Log
+const fs = require("fs");
+const fetch = require("node-fetch");
+const xml2js = require("xml2js");
 
-on:
-  schedule:
-    - cron: "0 5 * * *"   # elke dag om 05:00 Belgische tijd
-  workflow_dispatch:
+const channels = {
+  vtm: "https://xmltv.xmltv.se/vtm.be.xml",
+  vtm2: "https://xmltv.xmltv.se/vtm2.be.xml",
+  vtm3: "https://xmltv.xmltv.se/vtm3.be.xml",
+  vtm4: "https://xmltv.xmltv.se/vtm4.be.xml",
+  play4: "https://xmltv.xmltv.se/play4.be.xml",
+  play5: "https://xmltv.xmltv.se/play5.be.xml",
+  play6: "https://xmltv.xmltv.se/play6.be.xml",
+  play7: "https://xmltv.xmltv.se/play7.be.xml",
+  vrt1: "https://xmltv.xmltv.se/vrt1.be.xml",
+  canvas: "https://xmltv.xmltv.se/canvas.be.xml",
+  ketnet: "https://xmltv.xmltv.se/ketnet.be.xml"
+};
 
-jobs:
-  update:
-    runs-on: ubuntu-latest
+async function run() {
+  const today = new Date().toISOString().split("T")[0];
+  const currentYear = new Date().getFullYear();
 
-    steps:
-      - uses: actions/checkout@v3
+  if (!fs.existsSync("raw")) fs.mkdirSync("raw");
 
-      - name: Setup Node
-        uses: actions/setup-node@v3
-        with:
-          node-version: 18
+  let allPrograms = [];
 
-      - name: Run fetch script
-        run: |
-          npm init -y
-          npm install node-fetch@2
-          node fetch.js
+  for (const [name, url] of Object.entries(channels)) {
+    try {
+      const res = await fetch(url);
+      const xml = await res.text();
 
-      - name: Commit changes
-        run: |
-          git config --global user.name "github-actions"
-          git config --global user.email "github-actions@github.com"
-          git add -A
-          git commit -m "Daily update" || echo "No changes"
-          git pull --rebase
-          git push
+      fs.writeFileSync(`raw/${today}-${name}.xml`, xml);
+
+      const parsed = await xml2js.parseStringPromise(xml, { mergeAttrs: true });
+
+      const programs = parsed.tv.programme || [];
+
+      const mapped = programs.map(p => ({
+        title: p.title?.[0]?._ || "",
+        start: p.start?.[0] || "",
+        stop: p.stop?.[0] || "",
+        category: p.category?.[0]?._ || "",
+        desc: p.desc?.[0]?._ || "",
+        channel: name,
+        year: extractYear(p.desc?.[0]?._),
+        season: extractSeason(p.desc?.[0]?._)
+      }));
+
+      allPrograms.push(...mapped);
+
+      console.log(`OK: ${name}`);
+    } catch (err) {
+      console.log(`FOUT bij ${name}: ${err.message}`);
+    }
+  }
+
+  // FILTERS
+  const badGenres = ["Soap", "Reality", "Talkshow", "Nieuws", "Game Show"];
+
+  const filtered = allPrograms.filter(p => {
+    if (!p.title) return false;
+
+    const genre = p.category || "";
+    const year = p.year || null;
+    const season = p.season || null;
+
+    if (badGenres.some(g => genre.includes(g))) return false;
+
+    const isSeries =
+      season === 1 &&
+      year &&
+      year >= currentYear - 2;
+
+    const isFilm =
+      genre.includes("Film") &&
+      year &&
+      year >= currentYear - 3;
+
+    return isSeries || isFilm;
+  });
+
+  // LOGGEN
+  let log = {};
+  try {
+    log = JSON.parse(fs.readFileSync("log.json", "utf8"));
+  } catch {
+    log = {};
+  }
+
+  if (!log[today]) log[today] = [];
+
+  log[today].push({
+    tijdstip: new Date().toISOString(),
+    aantal: filtered.length,
+    premieres: filtered
+  });
+
+  fs.writeFileSync("log.json", JSON.stringify(log, null, 2));
+}
+
+function extractYear(text) {
+  if (!text) return null;
+  const match = text.match(/\b(19|20)\d{2}\b/);
+  return match ? parseInt(match[0]) : null;
+}
+
+function extractSeason(text) {
+  if (!text) return null;
+  const match = text.match(/seizoen\s+(\d+)/i);
+  return match ? parseInt(match[1]) : null;
+}
+
+run();
