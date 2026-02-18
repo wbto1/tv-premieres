@@ -8,13 +8,16 @@ async function run() {
   const res = await fetch(URL);
   const schedule = await res.json();
 
+  // PREMIERES ZOEKEN
   const premieres = schedule
     .filter(item =>
-      item.airdate === today &&
-      item.show &&
       (
-        item.show.type === 'Scripted' ||     // series
-        item.show.type === 'TV Movie'        // films
+        item.airdate === today ||                 // aflevering die vandaag uitgezonden wordt
+        item.show?.premiered === today            // serie/film die vandaag in première gaat
+      ) &&
+      (
+        item.show?.type === 'Scripted' ||         // series
+        item.show?.type === 'TV Movie'            // films
       )
     )
     .map(item => ({
@@ -24,8 +27,7 @@ async function run() {
       premiered: item.show.premiered || null
     }));
 
-  // --- LOGIC: DAGELIJKSE LOG BIJHOUDEN ---
-
+  // LOG INLADEN
   const log = JSON.parse(fs.readFileSync('log.json', 'utf8'));
 
   // Als er nog geen entry is voor vandaag → maak een lege array
@@ -33,11 +35,12 @@ async function run() {
     log[today] = [];
   }
 
-  // Als er GEEN premières zijn → log een tekstregel
+  // LOGICA: altijd iets loggen
   if (premieres.length === 0) {
+    // Geen premières → tekstregel toevoegen
     log[today].push("Geen premières vandaag");
   } else {
-    // Als er WEL premières zijn → voeg ze toe aan de log
+    // Wel premières → volledige info toevoegen
     log[today].push({
       tijdstip: new Date().toISOString(),
       aantal: premieres.length,
@@ -45,7 +48,7 @@ async function run() {
     });
   }
 
-  // Schrijf log terug naar bestand
+  // LOG OPSLAAN
   fs.writeFileSync('log.json', JSON.stringify(log, null, 2));
 }
 
